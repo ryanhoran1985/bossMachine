@@ -1,6 +1,6 @@
 const express = require('express');
 const apiRouter = express.Router();
-const { getAllFromDatabase, addToDatabase, getFromDatabaseById, updateInstanceInDatabase } = require('./db')
+const { getAllFromDatabase, addToDatabase, getFromDatabaseById, updateInstanceInDatabase, deleteFromDatabaseById, createMeeting } = require('./db')
 
 // apiRouter Params
 apiRouter.param("option", (req, res, next, option) => {
@@ -28,9 +28,16 @@ apiRouter.get('/:option', (req, res, next) => {
     res.send(newOption)
 });
 
+
 apiRouter.post('/:option', (req, res, next) => {
-    const newOption = addToDatabase(req.option, req.body);
-    res.status(201).send(newOption)
+    if (req.option === 'meetings') {
+        const newMeeting = createMeeting();
+        addToDatabase(req.option, newMeeting)
+        res.status(201).send(newMeeting)
+    } else {
+        const newOption = addToDatabase(req.option, req.body);
+        res.status(201).send(newOption)
+    }  
 });
 
 apiRouter.get('/:option/:id', (req, res, next) => {
@@ -41,7 +48,13 @@ apiRouter.put('/:option/:id', (req, res, next) => {
     let newThing = req.body;
     newThing.id = req.params.id;
     const createdNewThing = updateInstanceInDatabase(req.option, newThing)
-    res.status(201).send(createdNewThing)
-})
+    res.status(200).send(createdNewThing)
+});
+
+
+apiRouter.delete('/:option/:id', (req, res, next) => {
+    deleteFromDatabaseById(req.option, req.id.id);
+    res.status(200).send(`Deleted ${JSON.stringify(req.id)}`)
+});
 
 module.exports = apiRouter;
