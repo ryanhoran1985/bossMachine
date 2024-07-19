@@ -1,6 +1,7 @@
 const express = require('express');
 const apiRouter = express.Router();
-const { getAllFromDatabase, addToDatabase, getFromDatabaseById, updateInstanceInDatabase, deleteFromDatabaseById, createMeeting } = require('./db')
+const { getAllFromDatabase, addToDatabase, getFromDatabaseById, updateInstanceInDatabase, deleteFromDatabaseById, createMeeting, deleteAllFromDatabase } = require('./db')
+const checkMillionDollarIdea = require('./checkMillionDollarIdea.js');
 
 // apiRouter Params
 apiRouter.param("option", (req, res, next, option) => {
@@ -21,7 +22,15 @@ apiRouter.param('id', (req, res, next, id) => {
         req.id = hasId;
         next();
     }
-})
+});
+
+const applyTheCheckMillionDollarIdea = (req, res, next) => {
+    if (req.option === 'ideas') {
+        return checkMillionDollarIdea(req, res, next);
+    } else {
+        next();
+    }
+}
 
 apiRouter.get('/:option', (req, res, next) => {
     const newOption = getAllFromDatabase(req.option);
@@ -29,7 +38,7 @@ apiRouter.get('/:option', (req, res, next) => {
 });
 
 
-apiRouter.post('/:option', (req, res, next) => {
+apiRouter.post('/:option', applyTheCheckMillionDollarIdea, (req, res, next) => {
     if (req.option === 'meetings') {
         const newMeeting = createMeeting();
         addToDatabase(req.option, newMeeting)
@@ -44,7 +53,7 @@ apiRouter.get('/:option/:id', (req, res, next) => {
     res.send(req.id)
 });
 
-apiRouter.put('/:option/:id', (req, res, next) => {
+apiRouter.put('/:option/:id', applyTheCheckMillionDollarIdea, (req, res, next) => {
     let newThing = req.body;
     newThing.id = req.params.id;
     const createdNewThing = updateInstanceInDatabase(req.option, newThing)
@@ -54,7 +63,14 @@ apiRouter.put('/:option/:id', (req, res, next) => {
 
 apiRouter.delete('/:option/:id', (req, res, next) => {
     deleteFromDatabaseById(req.option, req.id.id);
-    res.status(200).send(`Deleted ${JSON.stringify(req.id)}`)
+    res.status(204).send(`Deleted ${JSON.stringify(req.id)}`)
 });
+
+apiRouter.delete("/:option", (req, res) => {
+    if (req.option === "meetings") {
+      deleteAllFromDatabase(req.option);
+      res.status(204).send("No content");
+    }
+  });
 
 module.exports = apiRouter;
